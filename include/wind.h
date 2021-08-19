@@ -5,7 +5,10 @@
 #include "esp_adc_cal.h"
 #include <stdint.h>
 
+#define CLICKS_TO_KPH 2.4011412
+
 enum windVaneDir {
+  UNKNOWN = 0,
   NORTH,           // 0/360 DEG
   NORTH_NORTHEAST, // 22 DEG
   NORTHEAST,       // 45 DEG
@@ -22,7 +25,6 @@ enum windVaneDir {
   WEST_NORTHWEST,  // 292 DEG
   NORTHWEST,       // 315 DEG
   NORTH_NORTHWEST, // 338 DEG
-  UNKNOWN
 };
 
 struct windDirInfo {

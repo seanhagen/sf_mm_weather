@@ -34,22 +34,6 @@ Station::_setupSensors() {
   interrupts();
 }
 
-void Station::_setupWind() {
-  if (wind) {
-    pinMode(WIND_SPEED_PIN, INPUT_PULLUP);
-    attachInterrupt(WIND_SPEED_PIN, _windSpeedIRQ, FALLING);
-  }
-  return true;
-}
-
-void Station::_setupRain() {
-  if (rain) {
-    pinMode(RAIN_PIN, INPUT_PULLUP);
-    attachInterrupt(RAIN_PIN, _rainIRQ, FALLING);
-  }
-  return true;
-}
-
 void Station::_setupBME280() {
   if (atmos) {
     //_bme280

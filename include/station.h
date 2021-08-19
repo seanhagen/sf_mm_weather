@@ -29,6 +29,9 @@
 #ifndef STATION_H
 #define STATION_H
 
+#define TWO_MIN_AVG_SIZE 120
+#define TWO_MIN_AVG_SIZE_F 120.0
+
 #ifndef WIND_VANE_PIN
 // A1 - GPIO pin 35, pad 38 on the MicroMod Weather Carrier Board (Input Only!)
 #define WIND_VANE_PIN 35
@@ -269,19 +272,27 @@ private:
 
   // the sensors
   BME280 _bme280;
-  bool _setupBME280();
   uint8_t _bme280_address;
+  bool _setupBME280();
+  void _loopBME280();
 
   VEML6075 _veml6075;
-  bool _setupVEML6075();
   uint8_t _veml6075_address;
+  bool _setupVEML6075();
+  void _loopVEML6075();
 
   SparkFun_AS3935 _as3935;
-  bool _setupAS3935();
   uint8_t _as3935_address;
+  bool _setupAS3935();
+  void _loopAS3935();
 
   bool _setupWind();
+  void _loopWind();
+  void _windSpeedIRQ();
+
   bool _setupRain();
+  void _loopRain();
+  void _rainIRQ();
 
   /* time vars  */
   // The millis counter to see when a second rolls by
@@ -307,19 +318,29 @@ private:
   bool atmos;
 
   /* rain */
-  void _rainIRQ();
+  // // rain over the last hour
+  // volatile float rainHour[60];
 
-  // rain over the last hour
-  volatile float rainHour[60];
+  // rain so far this minute in mm
+  volatile float rainM = 0;
 
-  // rain so far this minute
-  float rainM = 0;
+  // rain so far this hour in mm
+  volatile float rainH = 0;
 
-  // rain so far today
+  // rain so far today in mm
   volatile float rainD = 0;
 
+  // last 10 minutes of rain
+  float rain_10m[10];
+
+  // 120 bytes to keep track of 2 minute average rainfall
+  byte rainFallAvg[TWO_MIN_AVG_SIZE];
+
+  // 2 minute average of rainfall in mm
+  float rainAvg = 0;
+
   // modified in the rain IRQ function
-  volatile unsigned long raintTime = 0, rainLast = 0, rainInterval = 0;
+  volatile unsigned long rainTime = 0, rainLast = 0, rainInterval = 0;
 
   /* wind direction */
   // voltage of the vane, used to determinte direction
@@ -327,29 +348,31 @@ private:
   // the direction, converted from volts
   float rawWindDir = 0;
 
+  windVaneDir currentWindDir = UNKNOWN;
+
+  windVaneDir windDirAvg[TWO_MIN_AVG_SIZE];
+
+  windVaneDir avgWindDir2m = UNKNOWN;
+
   /* wind speed */
-  void _windSpeedIRQ();
   long lastWindCheck = 0;
   volatile long lastWindIRQ = 0;
   volatile byte windClicks = 0;
 
   // 120 bytes to keep track of 2 minute average
-  byte windspdavg[120];
+  byte windSpdAvg[TWO_MIN_AVG_SIZE];
 
-  byte windspdavg[120]; // 120 bytes to keep track of 2 minute average
+  // 120 ints to keep track of 2 minute average
+  windVaneDir windDiraAg[TWO_MIN_AVG_SIZE];
 
-  int winddiravg[WIND_DIR_AVG_SIZE]; // 120 ints to keep track of 2 minute
-                                     // average
-  float windgust_10m[10];            // 10 floats to keep track of 10 minute max
+  // 10 floats to keep track of 10 minute max
+  float windGust_10m[10];
 
   // instantaneous wind speed in kilometers per hour
   float windSpeedKPH = 0;
-  // instantaneous wind gust speed in kilometers per hour
-  float windGustKPH = 0;
+
   // 2 minute average of wind speed in kilometers per hour
-  float windSpd_avg2min = 0;
-  // past 10 minutes, highest wind gust speed in kilometers per hour
-  float windGust_10m = 0;
+  float windSpdAvgKPH = 0;
 };
 
 #endif
