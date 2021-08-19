@@ -6,6 +6,7 @@
 #include <stdint.h>
 
 #define CLICKS_TO_KPH 2.4011412
+#define WIND_DIR_AVG_SIZE 120
 
 enum windVaneDir {
   UNKNOWN = 0,

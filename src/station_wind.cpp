@@ -1,11 +1,27 @@
 #include <station.h>
 
+Station *Station::_windSelf;
+
 bool Station::_setupWind() {
   if (wind) {
     pinMode(WIND_SPEED_PIN, INPUT_PULLUP);
-    attachInterrupt(WIND_SPEED_PIN, _windSpeedIRQ, FALLING);
+    attachInterrupt(WIND_SPEED_PIN, _handleWindIRQ, FALLING);
+    _windSelf = this;
   }
   return true;
+}
+
+void Station::_handleWindIRQ() { Station::_windSelf->_windSpeedIRQ(); }
+
+void Station::_windSpeedIRQ() {
+  // Activated by the magnet in the anemometer (2 ticks per rotation),
+  // attached to input D3
+  // Ignore switch-bounce glitches less than 10ms (142MPH max reading)
+  // after the reed switch closes
+  if (millis() - lastWindIRQ > 10) {
+    lastWindIRQ = millis(); // Grab the current time
+    windClicks++;           // There is 1.492MPH for each click per second.
+  }
 }
 
 void Station::_loopWind() {
@@ -16,7 +32,7 @@ void Station::_loopWind() {
 
     deltaTime /= 1000.0; // Covert to seconds
 
-    nointerrupts();
+    noInterrupts();
     float windSpeed = (float)windClicks / deltaTime; // 3 / 0.750s = 4
     windClicks = 0; // Reset and start watching for new wind
     interrupts();
@@ -147,16 +163,5 @@ void Station::_loopWind() {
       winddir_avg2m += 360;
 
     // TODO: map degrees to direction and store in avgWindDir2m
-  }
-}
-
-void Station::_windSpeedIRQ() {
-  // Activated by the magnet in the anemometer (2 ticks per rotation),
-  // attached to input D3
-  // Ignore switch-bounce glitches less than 10ms (142MPH max reading)
-  // after the reed switch closes
-  if (millis() - lastWindIRQ > 10) {
-    lastWindIRQ = millis(); // Grab the current time
-    windClicks++;           // There is 1.492MPH for each click per second.
   }
 }

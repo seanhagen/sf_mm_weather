@@ -1,28 +1,30 @@
 #include <station.h>
 
-Station::Station(void) {
-  config c = config{
-      enableRain = true, enableWind = true,       enableLightning = true,
-      enableUV = true,   enableAtmosphere = true,
-  };
-  _setup(c);
+Station::Station(void) { _setup(); }
+
+Station::Station(stationConfig conf) {
+  _config = conf;
+  _setup();
 }
 
-Station::Station(config conf) { _setup(conf); }
+void Station::_setup() {
+  randomSeed(micros());
 
-Station::_setup(config conf) {
-  rain = conf.enableRain;
-  wind = conf.enableWind;
-  lightning = conf.enableLightning;
-  uv = conf.enableUV;
-  atmos = conf.enableAtmosphere;
+  rain = _config.enableRain;
+  wind = _config.enableWind;
+  lightning = _config.enableLightning;
+  uv = _config.enableUV;
+  atmos = _config.enableAtmosphere;
+
+  tempScale = _config.tempScale;
 
   lastSecond = millis();
 
+  Wire.begin();
   _setupSensors();
 }
 
-Station::_setupSensors() {
+void Station::_setupSensors() {
   Wire.begin();
 
   bool bme280setup = _setupBME280();

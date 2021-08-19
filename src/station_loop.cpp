@@ -35,13 +35,13 @@ void Station::loop() {
         windGust_10m[minutes_10m] = 0;
       }
 
-      zeroWindGust10m(minutes_10m);
+      // zeroWindGust10m(minutes_10m);
     }
   }
 
   _loopRain();
   _loopWind();
   _loopAS3935();
-  _loopVEML6076();
+  _loopVEML6075();
   _loopBME280();
 }

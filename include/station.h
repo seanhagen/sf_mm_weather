@@ -50,7 +50,7 @@
 #ifndef AS3935_INT_PIN
 // The pin used for IRQ for the AS3935 lightning detector.
 // G3 - GPIO pin 17, pad 46 on the MicroMod Weather Carrier Board
-#define AS3935_INT_PIN
+#define AS3935_INT_PIN 17
 #endif
 
 #ifndef AS3935_CS_PIN
@@ -58,8 +58,6 @@
 // G1 - GPIO pin 25, pad 42 on the MicroMod Weather Carrier Board
 #define AS3935_CS_PIN 35
 #endif
-
-#define WIND_DIR_AVG_SIZE 120
 
 #include <stdint.h>
 
@@ -70,22 +68,27 @@
 #include <SparkFun_AS3935.h>
 #include <SparkFun_VEML6075_Arduino_Library.h>
 
+#include "lightning.h"
 #include "wind.h"
 
-struct config {
+struct stationConfig {
 public:
   // will report rainfall readings from attached rain bucket
-  bool enableRain;
+  bool enableRain = true;
   // will report wind direction & speed from the attached anemometer and wind
   // vane
-  bool enableWind;
+  bool enableWind = true;
   // will report readings from the AS3935 lightning detection sensor if true
-  bool enableLightning;
+  bool enableLightning = true;
   // will report readings from the VEML6075 UV sensor if true
-  bool enableUV;
+  bool enableUV = true;
   // will report readings from the BME280 temperature, humidity, and air
   // pressure sensor if true
-  bool enableAtmosphere;
+  bool enableAtmosphere = true;
+
+  // what scale to use for temperature, 0 for Celcius, literally anything else
+  // for Fahrenheit
+  byte tempScale = 0;
 
   // the i2c address for the as3935
   uint8_t as3935_i2c = 0x03;
@@ -104,7 +107,7 @@ public:
   bool as3935_had_error;
 };
 
-struct isMeasuring {
+struct sensorIsMeasuring {
 public:
   bool bme280_temp;
   bool bme280_pres;
@@ -143,13 +146,13 @@ public:
 class Station {
 public:
   Station(void);
-  Station(config conf);
+  Station(stationConfig conf);
 
   // initializes all enabled sensors
   station_error begin(void);
 
   // returns which sensors are currently active
-  isMeasuring isMeasuring(void);
+  sensorIsMeasuring isMeasuring(void);
 
   // MUST BE CALLED WITHIN LOOP OF YOUR CODE!
   // NONE OF THIS WILL WORK OTHERWISE ( at least, not properly )
@@ -266,8 +269,13 @@ public:
 
   windVaneDir currentWindHeading();
 
+  // static Station *_self;
+
 private:
-  void _setup(config c);
+  stationConfig _config;
+  static Station *_rainSelf;
+  static Station *_windSelf;
+  void _setup();
   void _setupSensors();
 
   /* time vars  */
@@ -293,6 +301,8 @@ private:
   bool uv;
   bool atmos;
 
+  void _createInterrupt(uint8_t irq_pin, void (*ISR_callback)(void), int value);
+
   /*************************
    * BME280  -- ATMOSPHERE *
    *************************/
@@ -300,6 +310,12 @@ private:
   uint8_t _bme280_address;
   bool _setupBME280();
   void _loopBME280();
+
+  byte tempScale;
+
+  float tempLast = 0;
+  float humLast = 0;
+  float presLast = 0;
 
   float temp_10m[10];
   byte tempAvg[TWO_MIN_AVG_SIZE];
@@ -338,11 +354,15 @@ private:
   int strikes_10m[10];
   int strikes_2m[TWO_MIN_AVG_SIZE];
 
+  int _noise = 2;     // Value between 1-7
+  int _disturber = 2; // Value between 1-10
+
   /********
    * RAIN *
    ********/
   bool _setupRain();
   void _loopRain();
+  static void _handleRainIRQ();
   void _rainIRQ();
 
   // last 10 minutes of rain
@@ -375,10 +395,11 @@ private:
 
   bool _setupWind();
   void _loopWind();
+  static void _handleWindIRQ();
   void _windSpeedIRQ();
 
   // 120 bytes to keep track of 2 minute average
-  windVaneDir windDiraAg[TWO_MIN_AVG_SIZE];
+  windVaneDir windDirAvg[TWO_MIN_AVG_SIZE];
   // calculated value
   windVaneDir avgWindDir2m = UNKNOWN;
   // where is the vane pointing rite nao

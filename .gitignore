@@ -30,4 +30,5 @@
 *.exe
 *.out
 *.app
-/.ccls-cache/
+.clang_complete
+.ccls-cache

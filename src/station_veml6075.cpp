@@ -1,8 +1,8 @@
 #include <station.h>
 
-void Station::_setupVEML6075() {
+bool Station::_setupVEML6075() {
   if (uv) {
-    if (uv.begin(Wire) != VEML6075_SUCCESS) {
+    if (_veml6075.begin(Wire) != VEML6075_SUCCESS) {
       // panic or return an error or SOMEHING
       return false;
     }

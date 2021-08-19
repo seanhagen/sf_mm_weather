@@ -2,10 +2,13 @@
 
 const int mmPerClick = 2.794;
 
-void Station::_setupRain() {
+Station *Station::_rainSelf;
+
+bool Station::_setupRain() {
   if (rain) {
     pinMode(RAIN_PIN, INPUT_PULLUP);
-    attachInterrupt(RAIN_PIN, _rainIRQ, FALLING);
+    attachInterrupt(RAIN_PIN, Station::_handleRainIRQ, FALLING);
+    _rainSelf = this;
   }
   return true;
 }
@@ -18,17 +21,9 @@ void Station::_loopRain() {
     rainAvg = temp / TWO_MIN_AVG_SIZE_F;
   }
 }
-/*
- *   // last 10 minutes of rain
-  float rain_10m[10];
 
-  // 120 bytes to keep track of 2 minute average rainfall
-  byte rainFallAvg[TWO_MIN_AVG_SIZE];
+void Station::_handleRainIRQ() { Station::_rainSelf->_rainIRQ(); }
 
-  // 2 minute average of rainfall in mm
-  float rainAvg = 0;
-
-*/
 void Station::_rainIRQ() {
   rainTime = millis();
   rainInterval = rainTime - rainLast;
