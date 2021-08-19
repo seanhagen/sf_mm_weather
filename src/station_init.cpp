@@ -33,37 +33,3 @@ Station::_setupSensors() {
 
   interrupts();
 }
-
-void Station::_setupBME280() {
-  if (atmos) {
-    //_bme280
-    _bme280.settings.I2CAddress = _bme280_address;
-    if (_bme280.beginI2C() == false) {
-      // panic or return an error or SOMEHING
-      return false;
-    }
-  }
-  return true;
-}
-
-void Station::_setupVEML6075() {
-  if (uv) {
-    if (uv.begin(Wire) != VEML6075_SUCCESS) {
-      // panic or return an error or SOMEHING
-      return false;
-    }
-  }
-  return true;
-}
-
-void Station::_setupAS3935() {
-  if (lightning) {
-    pinMode(AS3935_INT_PIN, INPUT);
-    _as3935 = SparkFun_AS3935(_as3935_address);
-    if (_as3935.begin() == false) {
-      // panic or return an error or SOMEHING
-      return false;
-    }
-  }
-  return true;
-}

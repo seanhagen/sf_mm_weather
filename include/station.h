@@ -270,30 +270,6 @@ private:
   void _setup(config c);
   void _setupSensors();
 
-  // the sensors
-  BME280 _bme280;
-  uint8_t _bme280_address;
-  bool _setupBME280();
-  void _loopBME280();
-
-  VEML6075 _veml6075;
-  uint8_t _veml6075_address;
-  bool _setupVEML6075();
-  void _loopVEML6075();
-
-  SparkFun_AS3935 _as3935;
-  uint8_t _as3935_address;
-  bool _setupAS3935();
-  void _loopAS3935();
-
-  bool _setupWind();
-  void _loopWind();
-  void _windSpeedIRQ();
-
-  bool _setupRain();
-  void _loopRain();
-  void _rainIRQ();
-
   /* time vars  */
   // The millis counter to see when a second rolls by
   long lastSecond = 0;
@@ -317,9 +293,66 @@ private:
   bool uv;
   bool atmos;
 
-  /* rain */
-  // // rain over the last hour
-  // volatile float rainHour[60];
+  /*************************
+   * BME280  -- ATMOSPHERE *
+   *************************/
+  BME280 _bme280;
+  uint8_t _bme280_address;
+  bool _setupBME280();
+  void _loopBME280();
+
+  float temp_10m[10];
+  byte tempAvg[TWO_MIN_AVG_SIZE];
+
+  float hum_10m[10];
+  byte humAvg[TWO_MIN_AVG_SIZE];
+
+  float pres_10m[10];
+  byte presAvg[TWO_MIN_AVG_SIZE];
+
+  /*******************
+   * VEML6075 -- UV  *
+   *******************/
+  VEML6075 _veml6075;
+  uint8_t _veml6075_address;
+  bool _setupVEML6075();
+  void _loopVEML6075();
+
+  float uva_10m[10];
+  float uvaAvg[TWO_MIN_AVG_SIZE];
+
+  float uvb_10m[10];
+  float uvbAvg[TWO_MIN_AVG_SIZE];
+
+  float uvi_10m[10];
+  float uviAvg[TWO_MIN_AVG_SIZE];
+
+  /***********************
+   * AS3935 -- LIGHTNING *
+   ***********************/
+  SparkFun_AS3935 _as3935;
+  uint8_t _as3935_address;
+  bool _setupAS3935();
+  void _loopAS3935();
+
+  int strikes_10m[10];
+  int strikes_2m[TWO_MIN_AVG_SIZE];
+
+  /********
+   * RAIN *
+   ********/
+  bool _setupRain();
+  void _loopRain();
+  void _rainIRQ();
+
+  // last 10 minutes of rain
+  float rain_10m[10];
+
+  // 120 bytes to keep track of 2 minute average rainfall
+  byte rainFallAvg[TWO_MIN_AVG_SIZE];
+
+  // rain over the last hour
+  volatile float rainHour[60];
 
   // rain so far this minute in mm
   volatile float rainM = 0;
@@ -330,40 +363,29 @@ private:
   // rain so far today in mm
   volatile float rainD = 0;
 
-  // last 10 minutes of rain
-  float rain_10m[10];
-
-  // 120 bytes to keep track of 2 minute average rainfall
-  byte rainFallAvg[TWO_MIN_AVG_SIZE];
-
   // 2 minute average of rainfall in mm
   float rainAvg = 0;
 
   // modified in the rain IRQ function
   volatile unsigned long rainTime = 0, rainLast = 0, rainInterval = 0;
 
-  /* wind direction */
-  // voltage of the vane, used to determinte direction
-  float windVoltage = 0;
-  // the direction, converted from volts
-  float rawWindDir = 0;
+  /********
+   * WIND *
+   ********/
 
-  windVaneDir currentWindDir = UNKNOWN;
+  bool _setupWind();
+  void _loopWind();
+  void _windSpeedIRQ();
 
-  windVaneDir windDirAvg[TWO_MIN_AVG_SIZE];
-
+  // 120 bytes to keep track of 2 minute average
+  windVaneDir windDiraAg[TWO_MIN_AVG_SIZE];
+  // calculated value
   windVaneDir avgWindDir2m = UNKNOWN;
-
-  /* wind speed */
-  long lastWindCheck = 0;
-  volatile long lastWindIRQ = 0;
-  volatile byte windClicks = 0;
+  // where is the vane pointing rite nao
+  windVaneDir currentWindDir = UNKNOWN;
 
   // 120 bytes to keep track of 2 minute average
   byte windSpdAvg[TWO_MIN_AVG_SIZE];
-
-  // 120 ints to keep track of 2 minute average
-  windVaneDir windDiraAg[TWO_MIN_AVG_SIZE];
 
   // 10 floats to keep track of 10 minute max
   float windGust_10m[10];
@@ -371,8 +393,20 @@ private:
   // instantaneous wind speed in kilometers per hour
   float windSpeedKPH = 0;
 
-  // 2 minute average of wind speed in kilometers per hour
+  // cached 2 minute average of wind speed in kilometers per hour
   float windSpdAvgKPH = 0;
+
+  // private wind stuff
+  /// direction
+  // voltage of the vane, used to determinte direction
+  float windVoltage = 0;
+  // the direction, converted from volts
+  float rawWindDir = 0;
+
+  /// speed
+  long lastWindCheck = 0;
+  volatile long lastWindIRQ = 0;
+  volatile byte windClicks = 0;
 };
 
 #endif
