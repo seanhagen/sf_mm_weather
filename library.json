@@ -1,0 +1,48 @@
+{
+  "name": "SparkFun MicroMod Weather Station Carrier Board Library",
+  "version": "0.0.1",
+  "description": "A library for interacting with the weather station carrier board from SparkFuns' MicroMod lineup",
+  "keywords": "weather, micromod, sparkfun",
+  "repository":
+  {
+    "type": "git",
+    "url": "https://github.com/seanhagen/sf_mm_weather"
+  },
+  "authors":
+  [
+    {
+      "name": "Sean Hagen",
+      "email": "sean.hagen@gmail.com",
+      "url": "https://seanhagen.ca",
+      "maintainer": true
+    }
+  ],
+  "license": "MIT",
+  "homepage": "https://github.com/seanhagen/sf_mm_weather",
+  "dependencies": [
+    {
+      "owner": "adafruit",
+      "name":"Adafruit BusIO",
+      "version": "^1.8.3"
+    },
+    {
+      "owner": "sparkfun",
+      "name":"SparkFun BME280",
+      "version":"^2.0.9"
+    },
+    {
+      "owner": "sparkfun",
+      "name":	  "SparkFun AS3935 Lightning Detector Arduino Library",
+      "version": "^1.4.3",
+    },
+    {
+      "owner": "sparkfun",
+      "name":	  "SparkFun VEML6075 Arduino Library",
+      "version": "^1.1.4"
+    },
+	  "Wire",
+	  "SPI"
+  ],
+  "frameworks": "arduino",
+  "platforms": "espressif32"
+}
