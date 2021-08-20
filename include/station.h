@@ -31,10 +31,20 @@
 
 #define ONE_MIN_AVG_SIZE 60
 #define ONE_MIN_AVG_SIZE_F 60.0
-#define TEN_MIN_AVG_SIZE 1200
-#define TEN_MIN_AVG_SIZE_F 1200.0
+#define TEN_MIN_AVG_SIZE 10
+#define TEN_MIN_AVG_SIZE_F 10.0
+#define ONE_HR_AVG_SIZE 60
+#define ONE_HR_AVG_SIZE_F 60.0
 
 #define BME280_NUM_SEN 3
+
+#define NUM_BUCKET 3
+
+enum bucketPurpose {
+  ONE_MIN_AVG = 0,
+  TEN_MIN_AVG = 1,
+  ONE_HR_AVG = 2,
+};
 
 enum bme280SenType {
   BME280_TEMP = 0,
@@ -341,13 +351,7 @@ private:
   float humLast = 0, humOneMinAvg = 0, humTenMinAvg = 0;
   float presLast = 0, presOneMinAvg = 0, presTenMinAvg = 0;
 
-  byte tempOneMinAvg[ONE_MIN_AVG_SIZE];
-  byte humOneMinAvg[ONE_MIN_AVG_SIZE];
-  byte presOneMinAvg[ONE_MIN_AVG_SIZE];
-
-  float tempTenMinAvg[TEN_MIN_AVG_SIZE];
-  float humTenMinAvg[TEN_MIN_AVG_SIZE];
-  float presTenMinAvg[TEN_MIN_AVG_SIZE];
+  float _bme280Cache[BME280_NUM_SEN][NUM_BUCKET][ONE_HR_AVG_SIZE];
 
   /*******************
    * VEML6075 -- UV  *
@@ -399,26 +403,16 @@ private:
   static void _handleRainIRQ();
   void _rainIRQ();
 
-  // last 10 minutes of rain
-  float rain_10m[TEN_MIN_AVG_SIZE];
-
-  // 60 bytes to keep track of one minute of average rainfall
-  byte rainFallAvg[ONE_MIN_AVG_SIZE];
-
-  // rain over the last hour
-  volatile float rainHour[60];
+  void _rainMinute();
+  void _rainHour();
+  void _rainDay();
 
   // rain so far this minute in mm
   volatile float rainM = 0;
-
   // rain so far this hour in mm
   volatile float rainH = 0;
-
   // rain so far today in mm
   volatile float rainD = 0;
-
-  // 2 minute average of rainfall in mm
-  float rainAvg = 0;
 
   // modified in the rain IRQ function
   volatile unsigned long rainTime = 0, rainLast = 0, rainInterval = 0;
@@ -432,18 +426,21 @@ private:
   static void _handleWindIRQ();
   void _windSpeedIRQ();
 
+  void _windMinute();
+  void _windHour();
+  void _windHour();
+
   // 60 bytes to keep track of the one minute average
   windVaneDir windDirAvg[ONE_MIN_AVG_SIZE];
+
   // calculated value
   windVaneDir avgWindDirOneMin = UNKNOWN;
+
   // where is the vane pointing rite nao
   windVaneDir currentWindDir = UNKNOWN;
 
   // 60 bytes to keep track of the one minute average
   byte windSpdAvg[ONE_MIN_AVG_SIZE];
-
-  // 10 floats to keep track of 10 minute max
-  float windGust_10m[TEN_MIN_AVG_SIZE];
 
   // instantaneous wind speed in kilometers per hour
   float windSpeedKPH = 0;

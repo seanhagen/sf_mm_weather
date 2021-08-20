@@ -14,10 +14,9 @@ bool Station::_setupWind() {
 void Station::_handleWindIRQ() { Station::_windSelf->_windSpeedIRQ(); }
 
 void Station::_windSpeedIRQ() {
-  // Activated by the magnet in the anemometer (2 ticks per rotation),
-  // attached to input D3
-  // Ignore switch-bounce glitches less than 10ms (142MPH max reading)
-  // after the reed switch closes
+  // Activated by the magnet in the anemometer (2 ticks per rotation), attached
+  // to input D3 Ignore switch-bounce glitches less than 10ms (142MPH max
+  // reading) after the reed switch closes
   if (millis() - lastWindIRQ > 10) {
     lastWindIRQ = millis(); // Grab the current time
     windClicks++;           // There is 1.492MPH for each click per second.
@@ -39,20 +38,13 @@ void Station::_loopWind() {
     lastWindCheck = millis();
 
     float currentSpeed = windSpeed * CLICKS_TO_KPH; // 4 * 1.492 = 5.968MPH
-
     windSpeedKPH = currentSpeed;
-
     windSpdAvg[seconds] = (int)currentSpeed;
 
     // Check to see if this is a gust for the minute
     if (currentSpeed > windGust_10m[minutes_10m]) {
       windGust_10m[minutes_10m] = currentSpeed;
     }
-
-    float temp = 0;
-    for (int i = 0; i < ONE_MIN_AVG_SIZE; i++)
-      temp += windSpdAvg[i];
-    windSpdAvgKPH = temp / ONE_MIN_AVG_SIZE_F;
 
     rawWindDir = analogRead(WIND_VANE_PIN);
     windVoltage = rawWindDir * (5.0 / 4095.0);
@@ -142,6 +134,26 @@ void Station::_loopWind() {
     currentWindDir = vd;
     windDirAvg[seconds] = vd;
 
+    int winddir_avg2m = sum;
+    if (den > 0) {
+      winddir_avg2m /= den;
+    }
+    if (winddir_avg2m >= 360)
+      winddir_avg2m -= 360;
+    if (winddir_avg2m < 0)
+      winddir_avg2m += 360;
+
+    // TODO: map degrees to direction and store in avgWindDirOneMin
+  }
+}
+
+void Station::_windMinute() {
+  if (wind) {
+    float temp = 0;
+    for (int i = 0; i < ONE_MIN_AVG_SIZE; i++)
+      temp += windSpdAvg[i];
+    windSpdAvgKPH = temp / ONE_MIN_AVG_SIZE_F;
+
     long sum = windDirAvg[0];
     int D = windDirAvg[0];
     int den = WIND_DIR_AVG_SIZE;
@@ -162,16 +174,5 @@ void Station::_loopWind() {
 
       sum += D;
     }
-
-    int winddir_avg2m = sum;
-    if (den > 0) {
-      winddir_avg2m /= den;
-    }
-    if (winddir_avg2m >= 360)
-      winddir_avg2m -= 360;
-    if (winddir_avg2m < 0)
-      winddir_avg2m += 360;
-
-    // TODO: map degrees to direction and store in avgWindDirOneMin
   }
 }

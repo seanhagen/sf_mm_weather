@@ -33,11 +33,27 @@ void Station::_rainIRQ() {
     rainFallAvg[seconds] += mmPerClick;
 
     rainM += mmPerClick;
-    rain_10m[minutes_10m] += mmPerClick;
-
     rainH += mmPerClick;
     rainD += mmPerClick;
 
     rainLast = rainTime;
+  }
+}
+
+void Station::_rainMinute() {
+  if (rain) {
+    rainM = 0;
+  }
+}
+
+void Station::_rainHour() {
+  if (rain) {
+    rainH = 0;
+  }
+}
+
+void Station::_rainDay() {
+  if (rain) {
+    rainD = 0;
   }
 }

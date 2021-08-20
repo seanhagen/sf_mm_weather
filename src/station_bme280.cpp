@@ -16,6 +16,20 @@ void Station::_loopBME280() {
     BME280_SensorMeasurements reading;
     _bme280.readAllMeasurements(&reading, tempScale);
     tempLast = reading.temperature;
+
+    _bme280Cache[BME280_TEMP][]
     // _bme280.
   }
 }
+
+// enum bucketPurpose {
+//   ONE_MIN_AVG = 0,
+//   TEN_MIN_AVG = 1,
+//   ONE_HR_AVG = 2,
+// };
+
+// enum bme280SenType {
+//   BME280_TEMP = 0,
+//   BME280_HUM = 1,
+//   BME280_PRES = 2,
+// };

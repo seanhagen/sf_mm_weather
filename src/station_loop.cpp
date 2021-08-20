@@ -41,24 +41,20 @@ void Station::_10MinReset() {
   // zeroWindGust10m(minutes_10m);
 
   _uvTenMinute();
+  _rainTenMinute();
 }
 
 void Station::_minuteReset() {
   seconds = 0;
-  // set rainM to 0, even if rain isn't enabled, because otherwise
-  // trying to do this in a separate function will just suck.
-  // same goes for rainH & rainD
-  rainM = 0;
-  // rainHour[minutes] = 0;
   _uvMinute();
+  _windMinute();
+  _rainMinute();
 }
 
 void Station::_hourReset() {
   minutes = 0;
-  rainH = 0;
+
+  _rainHour();
 }
 
-void Station::_dayReset() {
-  hour = 0;
-  rainD = 0;
-}
+void Station::_dayReset() { hour = 0; }
