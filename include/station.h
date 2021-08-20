@@ -29,8 +29,25 @@
 #ifndef STATION_H
 #define STATION_H
 
-#define TWO_MIN_AVG_SIZE 120
-#define TWO_MIN_AVG_SIZE_F 120.0
+#define ONE_MIN_AVG_SIZE 60
+#define ONE_MIN_AVG_SIZE_F 60.0
+#define TEN_MIN_AVG_SIZE 1200
+#define TEN_MIN_AVG_SIZE_F 1200.0
+
+#define BME280_NUM_SEN 3
+
+enum bme280SenType {
+  BME280_TEMP = 0,
+  BME280_HUM = 1,
+  BME280_PRES = 2,
+};
+
+#define VEML6075_NUM_SEN 3
+enum veml6075SenType {
+  VEML6075_UVA = 0,
+  VEML6075_UVB = 1,
+  VEML6075_UVI = 2,
+};
 
 #ifndef WIND_VANE_PIN
 // A1 - GPIO pin 35, pad 38 on the MicroMod Weather Carrier Board (Input Only!)
@@ -283,16 +300,23 @@ private:
   long lastSecond = 0;
   // When it hits 60, increase the current minute
   byte seconds = 0;
-  // Keeps track of the "wind speed/dir avg" over last
-  // 2 minutes array of data
-  byte seconds_2m = 0;
   // Keeps track of where we are in various arrays of data
   byte minutes = 0;
   // Keeps track of where we are in wind gust/dir over last
   // 10 minutes array of data
   byte minutes_10m = 0;
-
+  // keeps track of the current hour, goes from 0 to 23
   byte hour = 0;
+
+  // gets called when we roll back the 10 minute average index
+  // back around to the start
+  void _10MinReset();
+  // gets called at the start of every minute
+  void _minuteReset();
+  // gets called at the start of every hour
+  void _hourReset();
+  // gets called at the start of every day
+  void _dayReset();
 
   // which sensors are enabled
   bool rain;
@@ -313,18 +337,17 @@ private:
 
   byte tempScale;
 
-  float tempLast = 0;
-  float humLast = 0;
-  float presLast = 0;
+  float tempLast = 0, tempOneMinAvg = 0, tempTenMinAvg = 0;
+  float humLast = 0, humOneMinAvg = 0, humTenMinAvg = 0;
+  float presLast = 0, presOneMinAvg = 0, presTenMinAvg = 0;
 
-  float temp_10m[10];
-  byte tempAvg[TWO_MIN_AVG_SIZE];
+  byte tempOneMinAvg[ONE_MIN_AVG_SIZE];
+  byte humOneMinAvg[ONE_MIN_AVG_SIZE];
+  byte presOneMinAvg[ONE_MIN_AVG_SIZE];
 
-  float hum_10m[10];
-  byte humAvg[TWO_MIN_AVG_SIZE];
-
-  float pres_10m[10];
-  byte presAvg[TWO_MIN_AVG_SIZE];
+  float tempTenMinAvg[TEN_MIN_AVG_SIZE];
+  float humTenMinAvg[TEN_MIN_AVG_SIZE];
+  float presTenMinAvg[TEN_MIN_AVG_SIZE];
 
   /*******************
    * VEML6075 -- UV  *
@@ -334,14 +357,25 @@ private:
   bool _setupVEML6075();
   void _loopVEML6075();
 
-  float uva_10m[10];
-  float uvaAvg[TWO_MIN_AVG_SIZE];
+  void _uvMinute();
+  void _uvTenMinute();
 
-  float uvb_10m[10];
-  float uvbAvg[TWO_MIN_AVG_SIZE];
+  float _vemlReadings[VEML6075_NUM_SEN];
+  float _vemlOneMinAvgs[VEML6075_NUM_SEN];
+  float _vemlTenMinAvgs[VEML6075_NUM_SEN];
 
-  float uvi_10m[10];
-  float uviAvg[TWO_MIN_AVG_SIZE];
+  // replace with enums -->
+  // float uvaLast = 0, uvaOneMinAvg = 0, uvaTenMinAvg = 0;
+  // float uvbLast = 0, uvbOneMinAvg = 0, uvbTenMinAvg = 0;
+  // float uviLast = 0, uviOneMinAvg = 0, uviTenMinAvg = 0;
+
+  // float uvaOneMinAvg_cache[ONE_MIN_AVG_SIZE];
+  // float uvbOneMinAvg_cache[ONE_MIN_AVG_SIZE];
+  // float uviOneMinAvg_cache[ONE_MIN_AVG_SIZE];
+
+  // float uvaTenMinAvg_cache[TEN_MIN_AVG_SIZE];
+  // float uvbTenMinAvg_cache[TEN_MIN_AVG_SIZE];
+  // float uviTenMinAvg_cache[TEN_MIN_AVG_SIZE];
 
   /***********************
    * AS3935 -- LIGHTNING *
@@ -351,8 +385,8 @@ private:
   bool _setupAS3935();
   void _loopAS3935();
 
-  int strikes_10m[10];
-  int strikes_2m[TWO_MIN_AVG_SIZE];
+  int strikes_10m[TEN_MIN_AVG_SIZE];
+  int strikes_2m[ONE_MIN_AVG_SIZE];
 
   int _noise = 2;     // Value between 1-7
   int _disturber = 2; // Value between 1-10
@@ -366,10 +400,10 @@ private:
   void _rainIRQ();
 
   // last 10 minutes of rain
-  float rain_10m[10];
+  float rain_10m[TEN_MIN_AVG_SIZE];
 
-  // 120 bytes to keep track of 2 minute average rainfall
-  byte rainFallAvg[TWO_MIN_AVG_SIZE];
+  // 60 bytes to keep track of one minute of average rainfall
+  byte rainFallAvg[ONE_MIN_AVG_SIZE];
 
   // rain over the last hour
   volatile float rainHour[60];
@@ -398,18 +432,18 @@ private:
   static void _handleWindIRQ();
   void _windSpeedIRQ();
 
-  // 120 bytes to keep track of 2 minute average
-  windVaneDir windDirAvg[TWO_MIN_AVG_SIZE];
+  // 60 bytes to keep track of the one minute average
+  windVaneDir windDirAvg[ONE_MIN_AVG_SIZE];
   // calculated value
-  windVaneDir avgWindDir2m = UNKNOWN;
+  windVaneDir avgWindDirOneMin = UNKNOWN;
   // where is the vane pointing rite nao
   windVaneDir currentWindDir = UNKNOWN;
 
-  // 120 bytes to keep track of 2 minute average
-  byte windSpdAvg[TWO_MIN_AVG_SIZE];
+  // 60 bytes to keep track of the one minute average
+  byte windSpdAvg[ONE_MIN_AVG_SIZE];
 
   // 10 floats to keep track of 10 minute max
-  float windGust_10m[10];
+  float windGust_10m[TEN_MIN_AVG_SIZE];
 
   // instantaneous wind speed in kilometers per hour
   float windSpeedKPH = 0;

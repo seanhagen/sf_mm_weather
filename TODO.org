@@ -1,0 +1,11 @@
+* TODO rethink the averages
+if this data is just getting sent to mqtt, then whatever is reading the data
+from there can compute and store the averages, right?
+
+i probably don't need to do any of that stuff in the weather station, although
+i'll keep it in for now.
+
+if i run into memory issues or bugs, i'll rip it all out
+
+alternatively: control whether it gets computed or not via headers and ifdefs,
+so that on larger brains it'll still work

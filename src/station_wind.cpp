@@ -42,7 +42,7 @@ void Station::_loopWind() {
 
     windSpeedKPH = currentSpeed;
 
-    windSpdAvg[seconds_2m] = (int)currentSpeed;
+    windSpdAvg[seconds] = (int)currentSpeed;
 
     // Check to see if this is a gust for the minute
     if (currentSpeed > windGust_10m[minutes_10m]) {
@@ -50,9 +50,9 @@ void Station::_loopWind() {
     }
 
     float temp = 0;
-    for (int i = 0; i < TWO_MIN_AVG_SIZE; i++)
+    for (int i = 0; i < ONE_MIN_AVG_SIZE; i++)
       temp += windSpdAvg[i];
-    windSpdAvgKPH = temp / TWO_MIN_AVG_SIZE_F;
+    windSpdAvgKPH = temp / ONE_MIN_AVG_SIZE_F;
 
     rawWindDir = analogRead(WIND_VANE_PIN);
     windVoltage = rawWindDir * (5.0 / 4095.0);
@@ -140,12 +140,18 @@ void Station::_loopWind() {
     }
 
     currentWindDir = vd;
-    windDirAvg[seconds_2m] = vd;
+    windDirAvg[seconds] = vd;
 
     long sum = windDirAvg[0];
     int D = windDirAvg[0];
-    for (int i = 1; i < TWO_MIN_AVG_SIZE; i++) {
+    int den = WIND_DIR_AVG_SIZE;
+    for (int i = 1; i < ONE_MIN_AVG_SIZE; i++) {
       int delta = windDirAvg[i] - D;
+
+      if (windDirAvg[i] == UNKNOWN) {
+        den--;
+        continue;
+      }
 
       if (delta < -180)
         D += delta + 360;
@@ -156,12 +162,16 @@ void Station::_loopWind() {
 
       sum += D;
     }
-    int winddir_avg2m = sum / WIND_DIR_AVG_SIZE;
+
+    int winddir_avg2m = sum;
+    if (den > 0) {
+      winddir_avg2m /= den;
+    }
     if (winddir_avg2m >= 360)
       winddir_avg2m -= 360;
     if (winddir_avg2m < 0)
       winddir_avg2m += 360;
 
-    // TODO: map degrees to direction and store in avgWindDir2m
+    // TODO: map degrees to direction and store in avgWindDirOneMin
   }
 }

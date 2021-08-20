@@ -16,9 +16,9 @@ bool Station::_setupRain() {
 void Station::_loopRain() {
   if (rain) {
     float temp = 0;
-    for (int i = 0; i < TWO_MIN_AVG_SIZE; i++)
+    for (int i = 0; i < ONE_MIN_AVG_SIZE; i++)
       temp += rainFallAvg[i];
-    rainAvg = temp / TWO_MIN_AVG_SIZE_F;
+    rainAvg = temp / ONE_MIN_AVG_SIZE_F;
   }
 }
 
