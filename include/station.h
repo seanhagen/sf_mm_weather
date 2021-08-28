@@ -29,22 +29,21 @@
 #ifndef STATION_H
 #define STATION_H
 
-#define ONE_MIN_AVG_SIZE 60
-#define ONE_MIN_AVG_SIZE_F 60.0
-#define TEN_MIN_AVG_SIZE 10
-#define TEN_MIN_AVG_SIZE_F 10.0
-#define ONE_HR_AVG_SIZE 60
-#define ONE_HR_AVG_SIZE_F 60.0
-
 #define BME280_NUM_SEN 3
 
-#define NUM_BUCKET 3
+// two buckets, one for minutes, one for hours
+#define NUM_BUCKET 2
 
-enum bucketPurpose {
-  ONE_MIN_AVG = 0,
-  TEN_MIN_AVG = 1,
-  ONE_HR_AVG = 2,
+enum bucketType {
+  BUCKET_MINUTES = 0,
+  BUCKET_HOURS = 1,
 };
+
+#define AVG_BUCKET_SIZE 60
+#define DAY_BUCKET_SIZE 24
+
+#define ONE_MIN_AVG_SIZE 60
+#define ONE_MIN_AVG_SIZE_F 60.0
 
 enum bme280SenType {
   BME280_TEMP = 0,
@@ -58,6 +57,14 @@ enum veml6075SenType {
   VEML6075_UVB = 1,
   VEML6075_UVI = 2,
 };
+
+/*
+ * All pin references:
+ * ESP32:
+ *   https://learn.sparkfun.com/tutorials/micromod-esp32-processor-board-hookup-guide/all
+ * MicroMod Weather Carrier Board:
+ *   https://learn.sparkfun.com/tutorials/micromod-weather-carrier-board-hookup-guide#hardware-overview
+ */
 
 #ifndef WIND_VANE_PIN
 // A1 - GPIO pin 35, pad 38 on the MicroMod Weather Carrier Board (Input Only!)
@@ -86,14 +93,18 @@ enum veml6075SenType {
 #define AS3935_CS_PIN 35
 #endif
 
+#define AS3935_AVG_SIZE 10
+
 #include <stdint.h>
 
 #include <Arduino.h>
+#include <SPI.h>
 #include <Wire.h>
 
 #include <SparkFunBME280.h>
 #include <SparkFun_AS3935.h>
-#include <SparkFun_VEML6075_Arduino_Library.h>
+// #include <SparkFun_VEML6075_Arduino_Library.h>
+#include <Adafruit_VEML6075.h>
 
 #include "lightning.h"
 #include "wind.h"
@@ -117,40 +128,34 @@ public:
   // for Fahrenheit
   byte tempScale = 0;
 
-  // the i2c address for the as3935
-  uint8_t as3935_i2c = 0x03;
+  // the SPI chip select pin for the as3935
+  int as3935_cs = 10;
+  uint8_t as3935_i2c = 10;
 
   // the i2c address for the bme280
   uint8_t bme280_i2c = 0x77;
 
   // the i2c address for the veml6075
-  uint8_t veml6075_i2c = 0x10;
+  // uint8_t veml6075_i2c = 0x10;
 };
 
-struct station_error {
-public:
-  VEML6075_error_t veml6075_error;
-  uint8_t bme280_error;
-  bool as3935_had_error;
-};
-
-struct sensorIsMeasuring {
-public:
-  bool bme280_temp;
-  bool bme280_pres;
-  bool bme280_hum;
-  bool veml6075;
-  bool as3935;
-};
+// struct station_error {
+// public:
+//   VEML6075_error_t veml6075_error;
+//   bool as3935_had_error;
+// };
 
 struct immediateMeasurements {
 public:
   float temperature;
   float humidity;
   float pressure;
+
   float uva;
   float uvb;
   float uvIndex;
+
+  windVaneDir windDir;
 };
 
 struct countedMeasurements {
@@ -158,6 +163,10 @@ public:
   float rainLastMinute;
   float rainLastHour;
   float rainToday;
+
+  float windSpeedNow;
+  float windSpeedMinuteAvg;
+  float windSpeedHourAvg;
 
   int lightningLastMinute;
   int lightningLastHour;
@@ -176,23 +185,19 @@ public:
   Station(stationConfig conf);
 
   // initializes all enabled sensors
-  station_error begin(void);
-
-  // returns which sensors are currently active
-  sensorIsMeasuring isMeasuring(void);
+  void begin(void);
 
   // MUST BE CALLED WITHIN LOOP OF YOUR CODE!
   // NONE OF THIS WILL WORK OTHERWISE ( at least, not properly )
   void loop();
 
-  // Reads all measurements from non-interrupt based sensors. A value of 0 for
-  // temperatureScale means Celsius, any other value means Fahrenheit.
-  void readAll(allMeasurements *measurements, byte temperatureScale = 0);
+  // Reads all measurements
+  void readAll(allMeasurements *measurements);
 
-  // turns on all the sensors
-  station_error powerOn();
-  // shuts off all the sensors
-  station_error shutdown();
+  // // turns on all the sensors
+  // station_error powerOn();
+  // // shuts off all the sensors
+  // station_error shutdown();
 
   /*****************************************************
    * BME280
@@ -224,14 +229,23 @@ public:
 
   /* BME280 TEMPERATURE */
   void setTemperatureCorrection(float corr);
-  float tempC();
-  float tempF();
+  // A value of 0 for temperatureScale means Celsius, any other value means
+  // Fahrenheit.
+  void setTempScale(byte tempScale);
+
+  float temperature();
+  float oneMinAvgTemp();
+  float oneHourAvgTemp();
 
   /* BME280 AIR PRESSURE */
   float airPressure();
+  float oneMinAvgPressure();
+  float oneHourAvgPressure();
 
   /* BME280 HUMIDITY */
   float humidity();
+  float oneMinAvgHumidity();
+  float oneHourAvgHumidity();
   double dewPointC();
   double dewPointF();
 
@@ -245,8 +259,16 @@ public:
    *****************************************************/
 
   float uva(void);
+  float oneMinAvgUVA(void);
+  float oneHourAvgUVA(void);
+
   float uvb(void);
-  float index(void);
+  float oneMinAvgUVB();
+  float oneHourAvgUVB();
+
+  float uvIndex(void);
+  float oneMinAvgUVIndex();
+  float oneHourAvgUVIndex();
 
   /*****************************************************
    * AS3935
@@ -261,7 +283,17 @@ public:
 
   // This register holds the distance to the front of the storm and not the
   // distance to a lightning strike.
-  uint8_t distanceToStorm();
+  byte distanceToStorm();
+
+  // returns the average of the last 10 lightning strikes
+  byte avgDistanceToStorm();
+
+  // returns the number of lightning strikes in the last minute
+  int strikeThisMinute();
+  // returns the number of lightning strikes in the last hour
+  int strikeThisHour();
+  // returns the number of lightning strikes in the last 24 hours
+  int strikeToday();
 
   /*****************************************************
    * RAIN
@@ -269,10 +301,17 @@ public:
    * momentary button closure for each 0.011" of rain that are collected.
    *
    *****************************************************/
-
+  // returns true if there's been rain in the last minute
   bool isRaining();
+  // returns how much rain in the last minute
   float rainLastMinute();
+  // returns avg rainfall over last minute
+  float rainAvgLastMinute();
+  // returns how much rain in the last hour
   float rainLastHour();
+  // returns avg rainfall over last hour
+  float rainAvgLastHour();
+  // returns how much rain since 12am today
   float rainToday();
 
   /*****************************************************
@@ -282,9 +321,9 @@ public:
    * closure once per second.
    *
    *****************************************************/
-
   float currentWindSpeedKPH();
-  float windSpeedAvg();
+  float oneMinAvgWindSpeedKPH();
+  float oneHourAvgWindSpeedKPH();
 
   /*****************************************************
    * VANE (WIND DIRECTION)
@@ -293,34 +332,34 @@ public:
    * switches at once, allowing up to 16 different positions to be indicated
    *
    *****************************************************/
-
   windVaneDir currentWindHeading();
-
-  // static Station *_self;
+  char *currentWindDirStr();
 
 private:
+  bool sleeping = false;
+
   stationConfig _config;
   static Station *_rainSelf;
   static Station *_windSelf;
+
+  bool bme280setup = false, veml6075setup = false, as3935setup = false,
+       windSetup = false, rainSetup = false;
+
   void _setup();
-  void _setupSensors();
 
   /* time vars  */
+  long now = 0;
   // The millis counter to see when a second rolls by
   long lastSecond = 0;
   // When it hits 60, increase the current minute
   byte seconds = 0;
   // Keeps track of where we are in various arrays of data
   byte minutes = 0;
-  // Keeps track of where we are in wind gust/dir over last
-  // 10 minutes array of data
-  byte minutes_10m = 0;
   // keeps track of the current hour, goes from 0 to 23
-  byte hour = 0;
+  byte hours = 0;
 
-  // gets called when we roll back the 10 minute average index
-  // back around to the start
-  void _10MinReset();
+  byte loopMeasure = 0;
+
   // gets called at the start of every minute
   void _minuteReset();
   // gets called at the start of every hour
@@ -342,70 +381,93 @@ private:
    *************************/
   BME280 _bme280;
   uint8_t _bme280_address;
+  uint8_t _bme280_begin;
+
   bool _setupBME280();
   void _loopBME280();
 
-  byte tempScale;
+  void _BME280Sleep();
+  void _BME280Wake();
 
-  float tempLast = 0, tempOneMinAvg = 0, tempTenMinAvg = 0;
-  float humLast = 0, humOneMinAvg = 0, humTenMinAvg = 0;
-  float presLast = 0, presOneMinAvg = 0, presTenMinAvg = 0;
+  void _bme280Minute();
+  void _bme280Hour();
 
-  float _bme280Cache[BME280_NUM_SEN][NUM_BUCKET][ONE_HR_AVG_SIZE];
+  byte _tempScale;
+
+  float tempLast = 0, humLast = 0, presLast = 0;
+  float tempMinAvg = 0, humMinAvg = 0, presMinAvg = 0;
+  float tempHourAvg = 0, humHourAvg = 0, presHourAvg = 0;
+
+  float bmeAvgs[BME280_NUM_SEN][NUM_BUCKET][AVG_BUCKET_SIZE];
 
   /*******************
    * VEML6075 -- UV  *
    *******************/
-  VEML6075 _veml6075;
+  // VEML6075 _veml6075;
+  Adafruit_VEML6075 _veml6075 = Adafruit_VEML6075();
   uint8_t _veml6075_address;
   bool _setupVEML6075();
   void _loopVEML6075();
 
-  void _uvMinute();
-  void _uvTenMinute();
+  // VEML6075_error_t _VEML6075Sleep();
+  // VEML6075_error_t _VEML6075Wake();
 
-  float _vemlReadings[VEML6075_NUM_SEN];
-  float _vemlOneMinAvgs[VEML6075_NUM_SEN];
-  float _vemlTenMinAvgs[VEML6075_NUM_SEN];
+  void _veml6075Minute();
+  void _veml6075Hour();
 
-  // replace with enums -->
-  // float uvaLast = 0, uvaOneMinAvg = 0, uvaTenMinAvg = 0;
-  // float uvbLast = 0, uvbOneMinAvg = 0, uvbTenMinAvg = 0;
-  // float uviLast = 0, uviOneMinAvg = 0, uviTenMinAvg = 0;
+  float uvAvgs[VEML6075_NUM_SEN][NUM_BUCKET][AVG_BUCKET_SIZE];
 
-  // float uvaOneMinAvg_cache[ONE_MIN_AVG_SIZE];
-  // float uvbOneMinAvg_cache[ONE_MIN_AVG_SIZE];
-  // float uviOneMinAvg_cache[ONE_MIN_AVG_SIZE];
-
-  // float uvaTenMinAvg_cache[TEN_MIN_AVG_SIZE];
-  // float uvbTenMinAvg_cache[TEN_MIN_AVG_SIZE];
-  // float uviTenMinAvg_cache[TEN_MIN_AVG_SIZE];
+  float uvaLast = 0, uvaMinAvg = 0, uvaHourAvg = 0;
+  float uvbLast = 0, uvbMinAvg = 0, uvbHourAvg = 0;
+  float uviLast = 0, uviMinAvg = 0, uviHourAvg = 0;
 
   /***********************
    * AS3935 -- LIGHTNING *
    ***********************/
   SparkFun_AS3935 _as3935;
   uint8_t _as3935_address;
+  int _as3935_cs;
+
   bool _setupAS3935();
   void _loopAS3935();
 
-  int strikes_10m[TEN_MIN_AVG_SIZE];
-  int strikes_2m[ONE_MIN_AVG_SIZE];
+  bool _AS3935Wake();
+  void _AS3935Sleep();
+
+  void _strikeMinute();
+  void _strikeHour();
+  void _strikeDay();
 
   int _noise = 2;     // Value between 1-7
   int _disturber = 2; // Value between 1-10
+  byte _distance = 0;
+  byte _distances[AS3935_AVG_SIZE];
+  int _distIdx = 0;
+
+  int _strikesMinute[AVG_BUCKET_SIZE];
+  int _strikesHour[AVG_BUCKET_SIZE];
+  int _strikesDay[24];
 
   /********
    * RAIN *
    ********/
   bool _setupRain();
-  void _loopRain();
   static void _handleRainIRQ();
   void _rainIRQ();
+
+  void _loopRain();
 
   void _rainMinute();
   void _rainHour();
   void _rainDay();
+
+  float rainfallMinuteAvg[ONE_MIN_AVG_SIZE];
+  float rainfallHourAvg[ONE_MIN_AVG_SIZE];
+
+  const int mmPerClick = 2.794;
+
+  float rainMinuteAvg = 0;
+  float rainHourAvg = 0;
 
   // rain so far this minute in mm
   volatile float rainM = 0;
@@ -420,33 +482,27 @@ private:
   /********
    * WIND *
    ********/
-
   bool _setupWind();
-  void _loopWind();
   static void _handleWindIRQ();
   void _windSpeedIRQ();
 
+  void _loopWind();
+  void _readVane();
+
   void _windMinute();
   void _windHour();
-  void _windHour();
-
-  // 60 bytes to keep track of the one minute average
-  windVaneDir windDirAvg[ONE_MIN_AVG_SIZE];
-
-  // calculated value
-  windVaneDir avgWindDirOneMin = UNKNOWN;
 
   // where is the vane pointing rite nao
   windVaneDir currentWindDir = UNKNOWN;
 
-  // 60 bytes to keep track of the one minute average
-  byte windSpdAvg[ONE_MIN_AVG_SIZE];
-
   // instantaneous wind speed in kilometers per hour
   float windSpeedKPH = 0;
 
-  // cached 2 minute average of wind speed in kilometers per hour
-  float windSpdAvgKPH = 0;
+  float windSpeedKPH_minAvg = 0;
+  float windSpeedKPH_hourAvg = 0;
+
+  float ws_minAvg[ONE_MIN_AVG_SIZE];
+  float ws_hourAvg[ONE_MIN_AVG_SIZE];
 
   // private wind stuff
   /// direction

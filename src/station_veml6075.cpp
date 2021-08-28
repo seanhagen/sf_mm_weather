@@ -2,8 +2,9 @@
 
 bool Station::_setupVEML6075() {
   if (uv) {
-
-    if (_veml6075.begin(Wire) != VEML6075_SUCCESS) {
+    // if (_veml6075.begin(Wire) == false) {
+    if (_veml6075.begin() == false) {
+      Serial.print("Unable to start VEML6075 sensor?");
       // panic or return an error or SOMEHING
       return false;
     }
@@ -14,95 +15,79 @@ bool Station::_setupVEML6075() {
 void Station::_loopVEML6075() {
   // maybe cache the values from uv.a(), uv.b(), and uv.i()?
   if (uv) {
-    uvaLast = _veml6075.a();
-    uvbLast = _veml6075.b();
-    uviLast = _veml6075.i();
+    // uvaLast = _veml6075.uva();
+    // uvbLast = _veml6075.uvb();
+    // uviLast = _veml6075.index();
 
-    uvaOneMinAvg_cache[seconds] = uvaLast;
-    uvbOneMinAvg_cache[seconds] = uvbLast;
-    uviOneMinAvg_cache[seconds] = uviLast;
+    // uvaLast = _veml6075.readUVA();
+    // uvbLast = _veml6075.readUVB();
+    // uviLast = _veml6075.readUVI();
+    _veml6075.readUVABI(&uvaLast, &uvbLast, &uviLast);
+
+    uvAvgs[VEML6075_UVA][BUCKET_MINUTES][seconds] = uvaLast;
+    uvAvgs[VEML6075_UVB][BUCKET_MINUTES][seconds] = uvbLast;
+    uvAvgs[VEML6075_UVI][BUCKET_MINUTES][seconds] = uviLast;
   }
 }
 
-void Station::_uvMinute() {
+// VEML6075_error_t Station::_VEML6075Wake() {
+//   if (uv) {
+//     return _veml6075.powerOn();
+//   }
+//   return VEML6075_ERROR_SUCCESS;
+// }
+
+// VEML6075_error_t Station::_VEML6075Sleep() {
+//   if (uv) {
+//     return _veml6075.shutdown();
+//   }
+//   return VEML6075_ERROR_SUCCESS;
+// }
+
+void Station::_veml6075Minute() {
   if (uv) {
-    uvaOneMinAvg = 0.0;
-    uvbOneMinAvg = 0.0;
-    uviOneMinAvg = 0.0;
-    float af = 0.0, bf = 0.0, indf = 0.0;
-    int ai = 0, bi = 0, ii = 0;
-    for (int i = 0; i < ONE_MIN_AVG_SIZE; i++) {
-      if (uvaOneMinAvg_cache[i] != 0) {
-        af++;
-        ai++;
-        uvaOneMinAvg += uvaOneMinAvg_cache[i];
-      }
+    float uva = 0, uvb = 0, uvi = 0;
 
-      if (uvbOneMinAvg_cache[i] != 0) {
-        bf++;
-        bi++;
-        uvbOneMinAvg += uvbOneMinAvg_cache[i];
-      }
-
-      if (uviOneMinAvg_cache[i] != 0) {
-        indf++;
-        ii++;
-        uviOneMinAvg += uviOneMinAvg_cache[i];
-      }
+    for (int i = 0; i < AVG_BUCKET_SIZE; i++) {
+      uva += uvAvgs[VEML6075_UVA][BUCKET_MINUTES][seconds];
+      uvb += uvAvgs[VEML6075_UVB][BUCKET_MINUTES][seconds];
+      uvi += uvAvgs[VEML6075_UVI][BUCKET_MINUTES][seconds];
     }
 
-    if (ai > 0) {
-      uvaOneMinAvg /= af;
-    }
-    if (bi > 0) {
-      uvbOneMinAvg /= bf;
-    }
-    if (ii > 0) {
-      uviOneMinAvg /= indf;
-    }
+    uvaMinAvg = uva / ONE_MIN_AVG_SIZE_F;
+    uvbMinAvg = uvb / ONE_MIN_AVG_SIZE_F;
+    uviMinAvg = uvi / ONE_MIN_AVG_SIZE_F;
 
-    uvaTenMinAvg_cache[minutes_10m] = uvaOneMinAvg;
-    uvbTenMinAvg_cache[minutes_10m] = uvbOneMinAvg;
-    uviTenMinAvg_cache[minutes_10m] = uviOneMinAvg;
+    uvAvgs[VEML6075_UVA][BUCKET_HOURS][minutes] = uvaMinAvg;
+    uvAvgs[VEML6075_UVB][BUCKET_HOURS][minutes] = uvbMinAvg;
+    uvAvgs[VEML6075_UVI][BUCKET_HOURS][minutes] = uviMinAvg;
   }
 }
 
-void Station::_uvTenMinute() {
+void Station::_veml6075Hour() {
   if (uv) {
-    uvaTenMinAvg = 0;
-    uvbTenMinAvg = 0;
-    uviTenMinAvg = 0;
+    float uva = 0, uvb = 0, uvi = 0;
 
-    float af = 0.0, bf = 0.0, indf = 0.0;
-    int ai = 0, bi = 0, ii = 0;
-    for (int i = 0; i < TEN_MIN_AVG_SIZE; i++) {
-      if (uvaTenMinAvg_cache[i] != 0) {
-        af++;
-        ai++;
-        uvaTenMinAvg += uvaTenMinAvg_cache[i];
-      }
-
-      if (uvbTenMinAvg_cache[i] != 0) {
-        bf++;
-        bi++;
-        uvbTenMinAvg += uvbTenMinAvg_cache[i];
-      }
-
-      if (uviTenMinAvg_cache[i] != 0) {
-        indf++;
-        ii++;
-        uviTenMinAvg += uviTenMinAvg_cache[i];
-      }
+    for (int i = 0; i < AVG_BUCKET_SIZE; i++) {
+      uva += uvAvgs[VEML6075_UVA][BUCKET_MINUTES][seconds];
+      uvb += uvAvgs[VEML6075_UVB][BUCKET_MINUTES][seconds];
+      uvi += uvAvgs[VEML6075_UVI][BUCKET_MINUTES][seconds];
     }
 
-    if (ai > 0) {
-      uvaTenMinAvg /= af;
-    }
-    if (bi > 0) {
-      uvbTenMinAvg /= bf;
-    }
-    if (ii > 0) {
-      uviTenMinAvg /= indf;
-    }
+    uvaHourAvg = uva / ONE_MIN_AVG_SIZE_F;
+    uvbHourAvg = uvb / ONE_MIN_AVG_SIZE_F;
+    uviHourAvg = uvi / ONE_MIN_AVG_SIZE_F;
   }
 }
+
+float Station::uva() { return uvaLast; }
+float Station::oneMinAvgUVA() { return uvaMinAvg; }
+float Station::oneHourAvgUVA() { return uvaHourAvg; }
+
+float Station::uvb() { return uvbLast; }
+float Station::oneMinAvgUVB() { return uvbMinAvg; }
+float Station::oneHourAvgUVB() { return uvbHourAvg; }
+
+float Station::uvIndex() { return uviLast; }
+float Station::oneMinAvgUVIndex() { return uviMinAvg; }
+float Station::oneHourAvgUVIndex() { return uviHourAvg; }

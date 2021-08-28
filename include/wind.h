@@ -28,10 +28,4 @@ enum windVaneDir {
   NORTH_NORTHWEST = 338, // 338 DEG
 };
 
-struct windDirInfo {
-  float voltage;
-  windVaneDir dir;
-  const char *name;
-};
-
 #endif

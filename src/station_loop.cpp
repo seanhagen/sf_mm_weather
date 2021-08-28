@@ -1,60 +1,74 @@
 #include <station.h>
 
 void Station::loop() {
-  if (millis() - lastSecond >= 1000) {
+  now = millis();
+  if (now - lastSecond >= 1000) {
     lastSecond += 1000;
+    // Serial.println("Second has passed!");
 
     seconds++;
     if (seconds > 59) {
+      Serial.println("It's been a minute");
       _minuteReset();
 
       minutes++;
       if (minutes > 59) {
+        Serial.println("Whew! It's been a hour!");
         _hourReset();
 
-        hour++;
-        if (hour > 23) {
+        hours++;
+        if (hours > 23) {
+          Serial.println("Oh wow, it's been a whole day!");
           _dayReset();
         }
       }
-
-      minutes_10m++;
-      if (minutes_10m > 9) {
-        _10MinReset();
-      }
+    }
+    if (!sleeping) {
+      // Serial.print("Not sleeping, getting readings: ");
+      // Serial.print("wind, ");
+      _loopWind();
+      // Serial.print("lightning, ");
+      _loopAS3935();
+      // Serial.print("uv, ");
+      _loopVEML6075();
+      // Serial.print("atmosphere ");
+      _loopBME280();
+      // Serial.println(" ...done getting readings!");
     }
   }
-
-  // TODO: only do one each loop -- have an looping index counter stored
-  // and use a switch to only do one each loop
-  _loopRain();
-  _loopWind();
-  _loopAS3935();
-  _loopVEML6075();
-  _loopBME280();
-}
-
-void Station::_10MinReset() {
-  minutes_10m = 0;
-  rain_10m[minutes_10m] = 0;
-  windGust_10m[minutes_10m] = 0;
-  // zeroWindGust10m(minutes_10m);
-
-  _uvTenMinute();
-  _rainTenMinute();
 }
 
 void Station::_minuteReset() {
   seconds = 0;
-  _uvMinute();
-  _windMinute();
-  _rainMinute();
+  if (!sleeping) {
+    _rainMinute();
+    _windMinute();
+
+    _strikeMinute();
+    _bme280Minute();
+    _veml6075Minute();
+  }
 }
 
 void Station::_hourReset() {
   minutes = 0;
 
-  _rainHour();
+  if (!sleeping) {
+    _rainHour();
+    _windHour();
+
+    _strikeHour();
+    _bme280Hour();
+    _veml6075Hour();
+  }
 }
 
-void Station::_dayReset() { hour = 0; }
+void Station::_dayReset() {
+  hours = 0;
+
+  if (!sleeping) {
+    _rainDay();
+
+    _strikeDay();
+  }
+}
