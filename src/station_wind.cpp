@@ -143,6 +143,7 @@ void Station::_windMinute() {
       tempM += ws_minAvg[i];
     }
     windSpeedKPH_minAvg = tempM / 60.0;
+    // TODO: map degrees to direction and store in avgWindDirOneMin
   }
 }
 

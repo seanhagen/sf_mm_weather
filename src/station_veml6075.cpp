@@ -2,9 +2,7 @@
 
 bool Station::_setupVEML6075() {
   if (uv) {
-    // if (_veml6075.begin(Wire) == false) {
-    if (_veml6075.begin() == false) {
-      Serial.print("Unable to start VEML6075 sensor?");
+    if (_veml6075.begin(Wire) != VEML6075_SUCCESS) {
       // panic or return an error or SOMEHING
       return false;
     }
@@ -15,13 +13,6 @@ bool Station::_setupVEML6075() {
 void Station::_loopVEML6075() {
   // maybe cache the values from uv.a(), uv.b(), and uv.i()?
   if (uv) {
-    // uvaLast = _veml6075.uva();
-    // uvbLast = _veml6075.uvb();
-    // uviLast = _veml6075.index();
-
-    // uvaLast = _veml6075.readUVA();
-    // uvbLast = _veml6075.readUVB();
-    // uviLast = _veml6075.readUVI();
     _veml6075.readUVABI(&uvaLast, &uvbLast, &uviLast);
 
     uvAvgs[VEML6075_UVA][BUCKET_MINUTES][seconds] = uvaLast;

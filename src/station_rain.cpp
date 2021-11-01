@@ -11,6 +11,15 @@ bool Station::_setupRain() {
   return true;
 }
 
+void Station::_loopRain() {
+  if (rain) {
+    // float temp = 0;
+    // for (int i = 0; i < ONE_MIN_AVG_SIZE; i++)
+    //   temp += rainFallAvg[i];
+    // rainAvg = temp / ONE_MIN_AVG_SIZE_F;
+  }
+}
+
 void Station::_handleRainIRQ() { Station::_rainSelf->_rainIRQ(); }
 
 void Station::_rainIRQ() {
@@ -19,9 +28,6 @@ void Station::_rainIRQ() {
 
   // ignore switch-bounce glitches less than 10mS after initial edge
   if (rainInterval > 10) {
-    rainfallMinuteAvg[seconds] += mmPerClick;
-    rainfallHourAvg[minutes] += mmPerClick;
-
     rainM += mmPerClick;
     rainH += mmPerClick;
     rainD += mmPerClick;
@@ -45,6 +51,12 @@ void Station::_rainMinute() {
     if (tempM > 0) {
       rainMinuteAvg = tempM / ONE_MIN_AVG_SIZE_F;
     }
+  }
+}
+
+void Station::_rainTenMinute() {
+  if (rain) {
+    // rain_10m[minutes_10m] = 0;
   }
 }
 

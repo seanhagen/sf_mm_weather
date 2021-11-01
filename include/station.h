@@ -458,6 +458,7 @@ private:
   void _loopRain();
 
   void _rainMinute();
+  void _rainTenMinute();
   void _rainHour();
   void _rainDay();
 
@@ -490,7 +491,15 @@ private:
   void _readVane();
 
   void _windMinute();
+  void _windTenMinute();
   void _windHour();
+  void _windDay();
+
+  // 60 bytes to keep track of the one minute average
+  windVaneDir windDirAvg[ONE_MIN_AVG_SIZE];
+
+  // calculated value
+  windVaneDir avgWindDirOneMin = UNKNOWN;
 
   // where is the vane pointing rite nao
   windVaneDir currentWindDir = UNKNOWN;
