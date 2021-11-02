@@ -11,10 +11,24 @@ void Station::_setup() {
   randomSeed(micros());
 
   rain = _config.enableRain;
+  Serial.print("Rain data collection is ");
+  Serial.println(rain ? "enabled!" : "not enabled...");
+
   wind = _config.enableWind;
+  Serial.print("Wind data collection is ");
+  Serial.println(wind ? "enabled!" : "not enabled...");
+
   lightning = _config.enableLightning;
+  Serial.print("Lightning data collection is ");
+  Serial.println(lightning ? "enabled!" : "not enabled...");
+
   uv = _config.enableUV;
+  Serial.print("UV data collection is ");
+  Serial.println(uv ? "enabled!" : "not enabled...");
+
   atmos = _config.enableAtmosphere;
+  Serial.print("Atmospheric data collection is ");
+  Serial.println(atmos ? "enabled" : "not enabled...");
 
   _bme280_address = _config.bme280_i2c;
   _as3935_address = _config.as3935_i2c;
