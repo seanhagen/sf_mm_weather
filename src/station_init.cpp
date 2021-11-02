@@ -20,9 +20,6 @@ void Station::_setup() {
   _as3935_address = _config.as3935_i2c;
   _as3935_cs = _config.as3935_cs;
 
-  //     int as3935_cs = 10;
-  // uint8_t as3935_i2c = 10;
-
   _tempScale = _config.tempScale;
 
   lastSecond = millis();
