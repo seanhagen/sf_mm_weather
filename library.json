@@ -1,7 +1,7 @@
 {
   "name": "SparkFun MicroMod Weather Station Carrier Board Library",
   "version": "0.0.2",
-  "description": "A library for interacting with the weather station carrier board from SparkFuns' MicroMod lineup",
+  "description": "A library for interacting with the weather station carrier board from SparkFuns' MicroMod lineup. NOT DEVELOPED BY SPARKFUN!",
   "keywords": "weather, micromod, sparkfun",
   "repository": {
     "type": "git",
