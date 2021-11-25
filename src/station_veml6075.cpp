@@ -2,7 +2,7 @@
 
 bool Station::_setupVEML6075() {
   if (uv) {
-    if (_veml6075.begin(Wire) != VEML6075_SUCCESS) {
+    if (_veml6075.begin() != true) {
       // panic or return an error or SOMEHING
       return false;
     }
