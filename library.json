@@ -1,6 +1,6 @@
 {
   "name": "SparkFun MicroMod Weather Station Carrier Board Library",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "A library for interacting with the weather station carrier board from SparkFuns' MicroMod lineup",
   "keywords": "weather, micromod, sparkfun",
   "repository": {
@@ -47,5 +47,10 @@
     "SPI"
   ],
   "frameworks": "arduino",
-  "platforms": "*"
+  "platforms": "*",
+  "headers": [
+    "station.h",
+    "lightning.h",
+    "wind.h"
+  ]
 }
