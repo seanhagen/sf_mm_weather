@@ -43,14 +43,9 @@ void Station::_rainMinute() {
 
     float tempM = 0;
     for (int i = 0; i < ONE_MIN_AVG_SIZE; i++) {
-      if (rainfallMinuteAvg[i] > 0) {
-        tempM += rainfallMinuteAvg[i];
-      }
+      tempM += rainfallMinuteAvg[i];
     }
-
-    if (tempM > 0) {
-      rainMinuteAvg = tempM / ONE_MIN_AVG_SIZE_F;
-    }
+    rainMinuteAvg = tempM > 0 ? tempM / ONE_MIN_AVG_SIZE_F : 0;
   }
 }
 
@@ -67,14 +62,9 @@ void Station::_rainHour() {
 
     float tempH = 0;
     for (int i = 0; i < ONE_MIN_AVG_SIZE; i++) {
-      if (rainfallHourAvg[i] > 0) {
-        tempH += rainfallHourAvg[i];
-      }
+      tempH += rainfallHourAvg[i];
     }
-
-    if (tempH > 0) {
-      rainHourAvg = tempH / ONE_MIN_AVG_SIZE_F;
-    }
+    rainHourAvg = tempH > 0 ? tempH / ONE_MIN_AVG_SIZE_F : 0;
   }
 }
 

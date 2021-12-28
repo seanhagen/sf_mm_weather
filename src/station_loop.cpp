@@ -8,17 +8,17 @@ void Station::loop() {
 
     seconds++;
     if (seconds > 59) {
-      Serial.println("It's been a minute");
+      // Serial.println("It's been a minute");
       _minuteReset();
 
       minutes++;
       if (minutes > 59) {
-        Serial.println("Whew! It's been a hour!");
+        // Serial.println("Whew! It's been a hour!");
         _hourReset();
 
         hours++;
         if (hours > 23) {
-          Serial.println("Oh wow, it's been a whole day!");
+          // Serial.println("Oh wow, it's been a whole day!");
           _dayReset();
         }
       }

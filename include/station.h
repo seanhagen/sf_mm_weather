@@ -194,6 +194,14 @@ public:
   // Reads all measurements
   void readAll(allMeasurements *measurements);
 
+  // methods to see if various features are turned on or off
+  bool isRain();
+  bool isWind();
+  bool isLightning();
+  bool isUv();
+  bool isAtmos();
+
+  
   // // turns on all the sensors
   // station_error powerOn();
   // // shuts off all the sensors
@@ -488,6 +496,7 @@ private:
   void _windSpeedIRQ();
 
   void _loopWind();
+  windVaneDir _voltToDir(float);
   void _readVane();
 
   void _windMinute();

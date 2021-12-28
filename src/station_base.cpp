@@ -30,3 +30,9 @@ void Station::readAll(allMeasurements *measurements) {
       .lightningToday = c,
   };
 }
+
+bool Station::isRain() { return rain; }
+bool Station::isWind() { return wind; }
+bool Station::isLightning() { return lightning; }
+bool Station::isUv() { return uv; }
+bool Station::isAtmos() { return atmos; }

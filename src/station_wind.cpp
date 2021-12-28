@@ -47,93 +47,116 @@ void Station::_loopWind() {
   }
 }
 
-void Station::_readVane() {
-  rawWindDir = analogRead(WIND_VANE_PIN);
-  windVoltage = rawWindDir * (5.0 / 4095.0);
+windVaneDir Station::_voltToDir(float in) {
+  // Serial.print("wind voltage: '");
+  // Serial.print(in);
+  // Serial.print("', direction: ");
 
-  windVaneDir vd = UNKNOWN;
-
-  // South
-  if (windVoltage >= 1.20 && windVoltage <= 1.35) {
-    vd = SOUTH;
+  // North
+  if (windVoltage >= 3.80 && windVoltage <= 3.95) {
+    // Serial.println(" north ");
+    return NORTH;
   }
 
-  // South_SouthWest
-  if (windVoltage >= 1.0 && windVoltage <= 1.15) {
-    vd = SOUTH_SOUTHWEST;
-  }
-
-  // SouthWest
-  if (windVoltage > 2.95 && windVoltage < 3.4) {
-    vd = SOUTHWEST;
-  }
-
-  // West_SouthWest
-  if (windVoltage >= 2.85 && windVoltage <= 2.95) {
-    vd = WEST_SOUTHWEST;
-  }
-
-  // West
-  if (windVoltage >= 4.75 && windVoltage <= 5.0) {
-    vd = WEST;
-  }
-
-  // West_NorthWest
-  if (windVoltage >= 4.0 && windVoltage <= 4.15) {
-    vd = WEST_NORTHWEST;
+  // North_NorthWest
+  if (windVoltage >= 3.35 && windVoltage <= 3.6) {
+    // Serial.println(" north north-west ");
+    return NORTH_NORTHWEST;
   }
 
   // NorthWest
   if (windVoltage >= 4.40 && windVoltage <= 4.50) {
-    vd = NORTHWEST;
+    // Serial.println(" north-west ");
+    return NORTHWEST;
   }
 
-  // North_NorthWest -- 3.40
-  if (windVoltage >= 3.40 && windVoltage <= 3.6) {
-    vd = NORTH_NORTHWEST;
+  // West_NorthWest
+  if (windVoltage >= 4.0 && windVoltage <= 4.15) {
+    // Serial.println(" west north-west ");
+    return WEST_NORTHWEST;
   }
 
-  // North
-  if (windVoltage >= 3.80 && windVoltage <= 3.95) {
-    vd = NORTH;
+  // West
+  if (windVoltage >= 4.75 && windVoltage <= 5.0) {
+    // Serial.println(" west ");
+    return WEST;
   }
 
-  // North_NorthEast
-  if (windVoltage >= 1.85 && windVoltage <= 1.90) {
-    vd = NORTH_NORTHEAST;
+  // West_SouthWest
+  if (windVoltage >= 2.85 && windVoltage <= 2.95) {
+    // Serial.println(" west south-west ");
+    return WEST_SOUTHWEST;
   }
 
-  // NorthEast
-  if (windVoltage >= 2.10 && windVoltage <= 2.22) {
-    vd = NORTHEAST;
+  // SouthWest
+  if (windVoltage > 2.95 && windVoltage < 3.35) {
+    // Serial.println(" south-west ");
+    return SOUTHWEST;
   }
 
-  // East_NorthEast
-  if (windVoltage >= 0.20 && windVoltage < 0.25) {
-    vd = EAST_NORTHEAST;
+  // South_SouthWest
+  if (windVoltage >= 1.0 && windVoltage <= 1.15) {
+    // Serial.println(" south south-west ");
+    return SOUTH_SOUTHWEST;
   }
 
-  // East
-  if (windVoltage >= 0.25 && windVoltage <= 0.34) {
-    vd = EAST;
-  }
-
-  // East_SouthEast
-  if (windVoltage >= 0.10 && windVoltage <= 0.15) {
-    vd = EAST_SOUTHEAST;
-  }
-
-  // SouthEast
-  if (windVoltage >= 0.65 && windVoltage <= 0.85) {
-    vd = SOUTHEAST;
+  // South
+  if (windVoltage >= 1.20 && windVoltage <= 1.35) {
+    // Serial.println(" south ");
+    return SOUTH;
   }
 
   // South_SouthEast
   if (windVoltage >= 0.40 && windVoltage <= 0.50) {
-    vd = SOUTH_SOUTHEAST;
+    // Serial.println(" south south-east");
+    return SOUTH_SOUTHEAST;
   }
 
-  currentWindDir = vd;
+  // SouthEast
+  if (windVoltage >= 0.65 && windVoltage <= 0.85) {
+    // Serial.println(" south-east ");
+    return SOUTHEAST;
+  }
+
+  // East_SouthEast
+  if (windVoltage >= 0.10 && windVoltage <= 0.15) {
+    // Serial.println(" east south-east ");
+    return EAST_SOUTHEAST;
+  }
+
+  // East
+  if (windVoltage >= 0.25 && windVoltage <= 0.34) {
+    // Serial.println(" east ");
+    return EAST;
+  }
+
+  // East_NorthEast
+  if (windVoltage >= 0.20 && windVoltage < 0.25) {
+    // Serial.println(" east north-east");
+    return EAST_NORTHEAST;
+  }
+
+  // NorthEast
+  if (windVoltage >= 2.10 && windVoltage <= 2.22) {
+    // Serial.println("north-east ");
+    return NORTHEAST;
+  }
+
+  // North_NorthEast
+  if (windVoltage >= 1.85 && windVoltage <= 1.90) {
+    // Serial.println(" north north-east ");
+    return NORTH_NORTHEAST;
+  }
+
+  // Serial.println(" unknown? ");
+
+  return UNKNOWN;
+}
+
+void Station::_readVane() {
+  rawWindDir = analogRead(WIND_VANE_PIN);
+  windVoltage = rawWindDir * (5.0 / 4095.0);
+  currentWindDir = _voltToDir(windVoltage);
 }
 
 void Station::_windMinute() {
@@ -142,7 +165,7 @@ void Station::_windMinute() {
     for (int i = 0; i < ONE_MIN_AVG_SIZE; i++) {
       tempM += ws_minAvg[i];
     }
-    windSpeedKPH_minAvg = tempM / 60.0;
+    windSpeedKPH_minAvg = tempM > 0 ? tempM / 60.0 : 0;
     // TODO: map degrees to direction and store in avgWindDirOneMin
   }
 }
@@ -153,7 +176,7 @@ void Station::_windHour() {
     for (int i = 0; i < ONE_MIN_AVG_SIZE; i++) {
       tempH += ws_hourAvg[i];
     }
-    windSpeedKPH_hourAvg = tempH / 60.0;
+    windSpeedKPH_hourAvg = tempH > 0 ? tempH / 60.0 : 0;
   }
 }
 
